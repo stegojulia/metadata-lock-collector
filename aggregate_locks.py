@@ -1,6 +1,7 @@
 import mysql.connector
 import time
 import threading
+from tabulate import tabulate
 
 # MySQL database connection
 db_config = {
@@ -25,6 +26,31 @@ collection_interval = 0.01
 unique_locks = set()
 
 
+def setup_database():
+    # Drop table if it exists, then create a new one
+    conn = mysql.connector.connect(**table1_db_config)
+    cursor = conn.cursor()
+
+    print("Setting up test tables...")
+    cursor.execute("DROP TABLE IF EXISTS `test_table`;")
+    cursor.execute(
+        """
+    CREATE TABLE `test_table` (
+        `id` int NOT NULL AUTO_INCREMENT,
+        `val` varchar(255) DEFAULT NULL,
+        PRIMARY KEY (`id`)
+    );                   
+    """
+    )
+    cursor.execute(
+        """
+    INSERT INTO `test_table` VALUES 
+        (1, "one"), (2, "two"), (3, "three"), (4, "four");"""
+    )
+
+    print("Test tables set up complete")
+
+
 # Function to run the query and collect unique lock data
 def query_metadata_locks(cursor):
     cursor.execute(
@@ -39,7 +65,7 @@ def query_metadata_locks(cursor):
         OWNER_THREAD_ID
     FROM performance_schema.metadata_locks
     WHERE OBJECT_SCHEMA != 'performance_schema'
-    AND OBJECT_SCHEMA != 'metadata_locks';;
+    AND OBJECT_SCHEMA != 'mysql';;
     """
     )
 
@@ -73,19 +99,19 @@ def session_1():
         cursor.execute("START TRANSACTION;")
         cursor.execute('INSERT INTO `test_table` VALUES (5, "five");')
         time.sleep(10)  # Keep the transaction open for 20 seconds
-        cursor.execute("ROLLBACK;")  # Rollback after 20 seconds
+        cursor.execute('rollback;')
     finally:
         cursor.close()
         conn.close()
 
 
 def session_2():
-    time.sleep(1)  # Wait to make sure session 1 starts first
+    time.sleep(2)  # Wait to make sure session 1 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
-        cursor.execute("ALTER TABLE `test_table` ADD COLUMN val2 INT;")
-        time.sleep(10)
+        cursor.execute("ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;")
+        time.sleep(15)
     finally:
         cursor.close()
         conn.close()
@@ -93,13 +119,13 @@ def session_2():
 
 # Function to start another transaction in session 3
 def session_3():
-    time.sleep(1)  # Wait to make sure session 1 starts first
+    time.sleep(4)  # Wait to make sure session 1 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
-        cursor.execute('INSERT INTO `test_table` VALUES (6, "six");')
-        time.sleep(5)  # Keep the transaction open for 5 seconds
+        cursor.execute('INSERT INTO `test_table` ( `id`,  `val`) VALUES (6, "six");')
+        time.sleep(2)  # Keep the transaction open for 5 seconds
     finally:
         cursor.close()
         conn.close()
@@ -120,7 +146,16 @@ def collect_locks(duration, interval):
         conn.close()
 
 
+def cleanup_database():
+    # Drop the table to clean up
+    conn = mysql.connector.connect(**table1_db_config)
+    cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS `test_table`;")
+
+
 def main():
+
+    setup_database()
 
     # Start the sessions in parallel using threads
     session1_thread = threading.Thread(target=session_1)
@@ -146,15 +181,31 @@ def main():
     session3_thread.join()
     lock_collection_thread.join()
 
-    # Print deduplicated locks sorted by table (OBJECT_SCHEMA, OBJECT_NAME)
-    sorted_locks = sorted(
-        unique_locks, key=lambda x: (x[1], x[2])
-    )  # Sort by OBJECT_SCHEMA, OBJECT_NAME
+    cleanup_database()
 
-    print(f"Total unique locks collected: {len(sorted_locks)}")
-    for lock in sorted_locks:
-        print(lock)
+# Sorting locks by OBJECT_SCHEMA and OBJECT_NAME
+    sorted_locks = sorted(unique_locks, key=lambda x: (x[6] if x[6] is not None else float('inf'), x[2] or ""))
 
+    # print(f"Total unique locks collected: {len(sorted_locks)}")
+    # for lock in sorted_locks:
+    #     print(lock)
+
+        # Prepare table data
+    table_data = [(
+        lock[0],  # OBJECT_TYPE
+        lock[1],  # OBJECT_SCHEMA
+        lock[2],  # OBJECT_NAME
+        lock[3],  # LOCK_TYPE
+        lock[4],  # LOCK_STATUS
+        lock[5],  # OWNER_EVENT_ID
+        lock[6]   # OWNER_THREAD_ID
+    ) for lock in sorted_locks]
+
+    # Define table headers
+    headers = ["Object Type", "Object Schema", "Object Name", "Lock Type", "Lock Status", "Owner Event ID", "Owner Thread ID"]
+
+    # Print the table
+    print(tabulate(table_data, headers=headers, tablefmt="grid"))
 
 if __name__ == "__main__":
     main()
