@@ -1,6 +1,5 @@
 import mysql.connector
 import time
-import collections
 
 # MySQL database connection
 db_config = {
@@ -24,7 +23,8 @@ def query_metadata_locks(cursor):
         LOCK_STATUS, 
         OWNER_EVENT_ID, 
         OWNER_THREAD_ID
-    FROM performance_schema.metadata_locks;
+    FROM performance_schema.metadata_locks
+    WHERE OBJECT_SCHEMA != 'performance_schema' AND OBJECT_NAME != 'metadata_locks';;
     """)
     
     # Process the result and add unique locks to the set
@@ -39,8 +39,8 @@ def main():
 
     try:
         # Set the duration and frequency
-        duration = 60 * 5  # Run for 5 minutes
-        # duration = 10
+        # duration = 60 * 5  # Run for 5 minutes
+        duration = 10
         interval = 0.01  #10 milliseconds (0.01 second)
         start_time = time.time()
 
