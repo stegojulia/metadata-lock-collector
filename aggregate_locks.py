@@ -20,8 +20,8 @@ table1_db_config = {
     "database": "lock_test",
 }
 
-collection_duration = 30
-collection_interval = 0.01
+collection_duration = 40
+collection_interval = 0.001
 # Use a set to store unique locks based on the combination of key fields
 unique_locks = set()
 
@@ -97,9 +97,11 @@ def session_1():
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
+        print('S1: INSERT INTO `test_table` VALUES (5, "five");')
         cursor.execute('INSERT INTO `test_table` VALUES (5, "five");')
         time.sleep(10)  # Keep the transaction open for 20 seconds
-        cursor.execute('rollback;')
+        print("Rolling back S1...")
+        cursor.execute("rollback;")
     finally:
         cursor.close()
         conn.close()
@@ -110,9 +112,13 @@ def session_2():
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
-        cursor.execute("ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;")
-        time.sleep(15)
+        print("S2: ALTER")
+        cursor.execute(
+            "ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;"
+        )
+        time.sleep(8)
     finally:
+        print("S2 close")
         cursor.close()
         conn.close()
 
@@ -124,9 +130,11 @@ def session_3():
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
+        print("S3")
         cursor.execute('INSERT INTO `test_table` ( `id`,  `val`) VALUES (6, "six");')
-        time.sleep(2)  # Keep the transaction open for 5 seconds
+        time.sleep(10)  # Keep the transaction open for 5 seconds
     finally:
+        print("S3 close")
         cursor.close()
         conn.close()
 
@@ -164,16 +172,16 @@ def main():
 
     # Start the lock collection in parallel
     duration = collection_duration
-    interval = collection_interval  # 10 milliseconds
+    interval = collection_interval
     lock_collection_thread = threading.Thread(
         target=collect_locks, args=(duration, interval)
     )
 
+    lock_collection_thread.start()
     # Start all threads
     session1_thread.start()
     session2_thread.start()
     session3_thread.start()
-    lock_collection_thread.start()
 
     # Wait for all threads to finish
     session1_thread.join()
@@ -183,29 +191,40 @@ def main():
 
     cleanup_database()
 
-# Sorting locks by OBJECT_SCHEMA and OBJECT_NAME
-    sorted_locks = sorted(unique_locks, key=lambda x: (x[6] if x[6] is not None else float('inf'), x[2] or ""))
+    # Sorting locks by OBJECT_SCHEMA and OBJECT_NAME
+    sorted_locks = sorted(
+        unique_locks,
+        key=lambda x: (x[6] if x[6] is not None else float("inf"), x[2] or ""),
+    )
 
-    # print(f"Total unique locks collected: {len(sorted_locks)}")
-    # for lock in sorted_locks:
-    #     print(lock)
-
-        # Prepare table data
-    table_data = [(
-        lock[0],  # OBJECT_TYPE
-        lock[1],  # OBJECT_SCHEMA
-        lock[2],  # OBJECT_NAME
-        lock[3],  # LOCK_TYPE
-        lock[4],  # LOCK_STATUS
-        lock[5],  # OWNER_EVENT_ID
-        lock[6]   # OWNER_THREAD_ID
-    ) for lock in sorted_locks]
+    # Prepare table data
+    table_data = [
+        (
+            lock[0],  # OBJECT_TYPE
+            lock[1],  # OBJECT_SCHEMA
+            lock[2],  # OBJECT_NAME
+            lock[3],  # LOCK_TYPE
+            lock[4],  # LOCK_STATUS
+            lock[5],  # OWNER_EVENT_ID
+            lock[6],  # OWNER_THREAD_ID
+        )
+        for lock in sorted_locks
+    ]
 
     # Define table headers
-    headers = ["Object Type", "Object Schema", "Object Name", "Lock Type", "Lock Status", "Owner Event ID", "Owner Thread ID"]
+    headers = [
+        "Object Type",
+        "Object Schema",
+        "Object Name",
+        "Lock Type",
+        "Lock Status",
+        "Owner Event ID",
+        "Owner Thread ID",
+    ]
 
     # Print the table
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
+
 
 if __name__ == "__main__":
     main()
