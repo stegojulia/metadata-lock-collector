@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "metadata-lock-counter"
+version = "0.1.0"
+description = ""
+authors = ["Julia Jablonska <julia.jablonska@zestia.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+mysql-connector-python = "^9.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
