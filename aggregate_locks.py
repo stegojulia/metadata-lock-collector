@@ -20,8 +20,8 @@ table1_db_config = {
     "database": "lock_test",
 }
 
-collection_duration = 40
-collection_interval = 0.001
+collection_duration = 30
+collection_interval = 0.00001
 # Use a set to store unique locks based on the combination of key fields
 unique_locks = set()
 
@@ -32,7 +32,7 @@ def setup_database():
     cursor = conn.cursor()
 
     print("Setting up test tables...")
-    cursor.execute("DROP TABLE IF EXISTS `test_table`;")
+    cleanup_database()
     cursor.execute(
         """
     CREATE TABLE `test_table` (
@@ -49,6 +49,11 @@ def setup_database():
     )
 
     print("Test tables set up complete")
+
+def check_metadata_locks_reset():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    query_metadata_locks(cursor)
 
 
 # Function to run the query and collect unique lock data
@@ -92,49 +97,51 @@ def query_metadata_locks(cursor):
 
 
 # Function to start a transaction in session 1
-def session_1():
+def session_1(query):
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
-        print('S1: INSERT INTO `test_table` VALUES (5, "five");')
-        cursor.execute('INSERT INTO `test_table` VALUES (5, "five");')
+        print(f"Executing S1 query: {query}")
+        # cursor.execute('INSERT INTO `test_table` VALUES (5, "five");')
+        cursor.execute(query)
         time.sleep(10)  # Keep the transaction open for 20 seconds
         print("Rolling back S1...")
         cursor.execute("rollback;")
     finally:
+        print("Closing S1")
         cursor.close()
         conn.close()
 
 
-def session_2():
+def session_2(query):
     time.sleep(2)  # Wait to make sure session 1 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
-        print("S2: ALTER")
-        cursor.execute(
-            "ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;"
-        )
+        print(f"Executing S2 query: {query}")
+        cursor.execute(query)
         time.sleep(8)
     finally:
-        print("S2 close")
+        print("Closing S2")
         cursor.close()
         conn.close()
 
 
 # Function to start another transaction in session 3
-def session_3():
-    time.sleep(4)  # Wait to make sure session 1 starts first
+def session_3(query):
+    time.sleep(3)  # Wait to make sure session 2 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
-        print("S3")
-        cursor.execute('INSERT INTO `test_table` ( `id`,  `val`) VALUES (6, "six");')
+        print(f"Executing S3 query: {query}")
+        cursor.execute(query)
         time.sleep(10)  # Keep the transaction open for 5 seconds
     finally:
-        print("S3 close")
+        print("Rolling back S3")
+        cursor.execute("rollback;")
+        print("Closing S3")
         cursor.close()
         conn.close()
 
@@ -158,17 +165,21 @@ def cleanup_database():
     # Drop the table to clean up
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS `child`;")
     cursor.execute("DROP TABLE IF EXISTS `test_table`;")
 
 
-def main():
+def aggregate_locks(name,query_1,query_2,query_3):
+
+    global unique_locks
+    unique_locks.clear() 
 
     setup_database()
 
     # Start the sessions in parallel using threads
-    session1_thread = threading.Thread(target=session_1)
-    session2_thread = threading.Thread(target=session_2)
-    session3_thread = threading.Thread(target=session_3)
+    session1_thread = threading.Thread(target=session_1, args=(query_1,))
+    session2_thread = threading.Thread(target=session_2, args=(query_2,))
+    session3_thread = threading.Thread(target=session_3, args=(query_3,))
 
     # Start the lock collection in parallel
     duration = collection_duration
@@ -223,8 +234,9 @@ def main():
     ]
 
     # Print the table
+    print(name)
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
