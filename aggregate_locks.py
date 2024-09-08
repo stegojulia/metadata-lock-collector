@@ -26,29 +26,60 @@ collection_interval = 0.00001
 unique_locks = set()
 
 
-def setup_database():
+def setup_database(parent):
     # Drop table if it exists, then create a new one
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
 
-    print("Setting up test tables...")
     cleanup_database()
-    cursor.execute(
-        """
-    CREATE TABLE `test_table` (
+
+    print("Setting up test tables...")
+    if parent:
+        print("Setting up parent table...")
+        cursor.execute(
+            """
+    CREATE TABLE `parent` (
         `id` int NOT NULL AUTO_INCREMENT,
         `val` varchar(255) DEFAULT NULL,
         PRIMARY KEY (`id`)
     );                   
     """
-    )
+        )
+        cursor.execute(
+            "INSERT INTO `parent` VALUES (1, 'one'), (2, 'two'), (3, 'three'), (4, 'four');"
+        )
+        print("Setting up the main table...")
+        cursor.execute(
+            """ CREATE TABLE `test_table` (
+                `id` int NOT NULL AUTO_INCREMENT,
+                `val` varchar(10) DEFAULT NULL,
+                `parent_id` int DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                CONSTRAINT `fk_parent` FOREIGN KEY (`parent_id`)
+                REFERENCES `parent` (`id`)
+                ON DELETE CASCADE 
+                ON UPDATE NO ACTION
+                );"""
+        )
+    else:
+        cursor.execute(
+            """
+        CREATE TABLE `test_table` (
+            `id` int NOT NULL AUTO_INCREMENT,
+            `val` varchar(255) DEFAULT NULL,
+            PRIMARY KEY (`id`)
+        );                   
+        """
+        )
+
+    print("Adding example records...")
     cursor.execute(
         """
-    INSERT INTO `test_table` VALUES 
-        (1, "one"), (2, "two"), (3, "three"), (4, "four");"""
+        INSERT INTO `test_table` (id,val) VALUES 
+        (1, "one"), (2, "two"), (3, "three"), (4,"four");"""
     )
+    print("Tables ready")
 
-    print("Test tables set up complete")
 
 def check_metadata_locks_reset():
     conn = mysql.connector.connect(**db_config)
@@ -163,18 +194,23 @@ def collect_locks(duration, interval):
 
 def cleanup_database():
     # Drop the table to clean up
+    print("Ensuring the database is clean and ready...")
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     cursor.execute("DROP TABLE IF EXISTS `child`;")
     cursor.execute("DROP TABLE IF EXISTS `test_table`;")
+    cursor.execute("DROP TABLE IF EXISTS `parent`;")
 
 
-def aggregate_locks(name,query_1,query_2,query_3):
+def aggregate_locks(name, query_1, query_2, query_3, parent=False):
+    print("----------------------------")
+    print(f"Running the {name} scenario")
+    print("----------------------------")
 
     global unique_locks
-    unique_locks.clear() 
+    unique_locks.clear()
 
-    setup_database()
+    setup_database(parent)
 
     # Start the sessions in parallel using threads
     session1_thread = threading.Thread(target=session_1, args=(query_1,))
@@ -234,7 +270,6 @@ def aggregate_locks(name,query_1,query_2,query_3):
     ]
 
     # Print the table
-    print(name)
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
 
 
