@@ -3,22 +3,6 @@ import time
 import threading
 from tabulate import tabulate
 
-# MySQL database connection
-db_config = {
-    "user": "root",
-    "password": "strong_password",
-    "host": "127.0.0.1",
-    "port": 3307,
-    "database": "performance_schema",
-}
-
-table1_db_config = {
-    "user": "root",
-    "password": "strong_password",
-    "host": "127.0.0.1",
-    "port": 3307,
-    "database": "lock_test",
-}
 
 collection_duration = 30
 collection_interval = 0.0001
@@ -26,12 +10,12 @@ collection_interval = 0.0001
 unique_locks = set()
 
 
-def setup_database(parent=False):
+def setup_database(db_config, parent=False):
     # Drop table if it exists, then create a new one
-    conn = mysql.connector.connect(**table1_db_config)
+    conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
-    cleanup_database()
+    cleanup_database(db_config)
 
     print("Setting up test tables...")
     if parent:
@@ -124,8 +108,8 @@ def query_metadata_locks(cursor):
 
 
 # Function to start a transaction in session 1
-def session_1(query):
-    conn = mysql.connector.connect(**table1_db_config)
+def session_1(query, db_config):
+    conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
@@ -141,9 +125,9 @@ def session_1(query):
         conn.close()
 
 
-def ddl_session(query,table_config):
+def ddl_session(query, db_config):
     time.sleep(2)  # Wait to make sure session 1 starts first
-    conn = mysql.connector.connect(**table_config)
+    conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     try:
         print(f"Executing DDL query: {query}")
@@ -156,9 +140,9 @@ def ddl_session(query,table_config):
 
 
 # Function to start another transaction in session 3
-def dml_session(query):
+def dml_session(query, db_config):
     time.sleep(5)  # Wait to make sure session 2 starts first
-    conn = mysql.connector.connect(**table1_db_config)
+    conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     try:
         cursor.execute("START TRANSACTION;")
@@ -173,7 +157,7 @@ def dml_session(query):
         conn.close()
 
 
-def collect_locks(duration, interval):
+def collect_locks(duration, interval, db_config):
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
@@ -188,10 +172,10 @@ def collect_locks(duration, interval):
         conn.close()
 
 
-def cleanup_database():
+def cleanup_database(db_config):
     # Drop the table to clean up
     print("Ensuring the database is clean and ready...")
-    conn = mysql.connector.connect(**table1_db_config)
+    conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     cursor.execute("DROP TABLE IF EXISTS `child`;")
     cursor.execute("DROP TABLE IF EXISTS `child2`;")
@@ -199,7 +183,36 @@ def cleanup_database():
     cursor.execute("DROP TABLE IF EXISTS `parent`;")
 
 
-def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=False, parent=False):
+def aggregate_locks(
+    name,
+    query_1,
+    query_2,
+    query_3,
+    user="root",
+    password="strong_password",
+    host="127.0.0.1",
+    port=3306,
+    database="lock_test",
+    query_4=False,
+    query_5=False,
+    parent=False,
+):
+
+    ps_config = {
+        "user": user,
+        "password": password,
+        "host": host,
+        "port": port,
+        "database": "performance_schema",
+    }
+
+    tb_config = {
+        "user": user,
+        "password": password,
+        "host": host,
+        "port": port,
+        "database": database,
+    }
     print("----------------------------")
     print(f"Running the {name} scenario")
     print("----------------------------")
@@ -207,21 +220,28 @@ def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=Fals
     global unique_locks
     unique_locks.clear()
 
-    setup_database(parent)
+    setup_database(ps_config, parent)
 
     # Start the sessions in parallel using threads
-    session1_thread = threading.Thread(target=session_1, args=(query_1,))
-    session2_thread = threading.Thread(target=ddl_session, args=(query_2,table1_db_config))
-    session3_thread = threading.Thread(target=dml_session, args=(query_3,))
+    session1_thread = threading.Thread(
+        target=session_1,
+        args=(
+            query_1,
+            tb_config,
+        ),
+    )
+    session2_thread = threading.Thread(target=ddl_session, args=(query_2, tb_config))
+    session3_thread = threading.Thread(target=dml_session, args=(query_3, tb_config))
     if query_4:
-        session4_thread = threading.Thread(target=ddl_session, args=(query_4,table1_db_config))
-        
+        session4_thread = threading.Thread(
+            target=ddl_session, args=(query_4, tb_config)
+        )
 
     # Start the lock collection in parallel
     duration = collection_duration
     interval = collection_interval
     lock_collection_thread = threading.Thread(
-        target=collect_locks, args=(duration, interval)
+        target=collect_locks, args=(duration, interval, tb_config)
     )
 
     lock_collection_thread.start()
@@ -232,7 +252,6 @@ def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=Fals
     if query_4:
         time.sleep(5)
         session4_thread.start()
-        
 
     # Wait for all threads to finish
     session1_thread.join()
@@ -242,7 +261,7 @@ def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=Fals
         session4_thread.join()
     lock_collection_thread.join()
 
-    cleanup_database()
+    cleanup_database(tb_config)
 
     # Sorting locks by OBJECT_SCHEMA and OBJECT_NAME
     sorted_locks = sorted(

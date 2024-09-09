@@ -14,10 +14,10 @@ db_config = {
     "database": os.environ.get('DATABASE')
 }
 
-aggregate_locks.setup_database()
+aggregate_locks.setup_database(db_config)
 
 lock_collection_thread = threading.Thread(
-        target=aggregate_locks.collect_locks, args=(30, 0.0001)
+        target=aggregate_locks.collect_locks, args=(30, 0.0001, db_config)
     )
 ddl_session_thread = threading.Thread(target=aggregate_locks.ddl_session, args=(query,db_config))
 
