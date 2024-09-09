@@ -121,6 +121,28 @@ def run_all_scenarios():
         parent = True
     )
 
+    aggregate_locks(
+        name="insert-createtable-insert-createtable",
+        query_1="INSERT INTO `test_table` (id,val) VALUES (5, 'anteater');",
+        query_2="""CREATE TABLE `child` 
+                (`id` int NOT NULL AUTO_INCREMENT,
+                `test_table_id` int DEFAULT NULL,
+                `val` varchar(10) DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                CONSTRAINT `fk_test_table` FOREIGN KEY (`test_table_id`)
+                REFERENCES `test_table` (`id`)
+                ON DELETE CASCADE ON UPDATE NO ACTION );""",
+        query_3="INSERT INTO `test_table` (id,val) VALUES (6, 'armadillo');",
+        query_4="""CREATE TABLE `child2` 
+                (`id` int NOT NULL AUTO_INCREMENT,
+                `test_table_id` int DEFAULT NULL,
+                `val` varchar(10) DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                CONSTRAINT `fk_test_table_2` FOREIGN KEY (`test_table_id`)
+                REFERENCES `test_table` (`id`)
+                ON DELETE CASCADE ON UPDATE NO ACTION );""",
+    )
+
 
 
 if __name__ == "__main__":

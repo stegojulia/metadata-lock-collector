@@ -21,7 +21,7 @@ table1_db_config = {
 }
 
 collection_duration = 30
-collection_interval = 0.00001
+collection_interval = 0.0001
 # Use a set to store unique locks based on the combination of key fields
 unique_locks = set()
 
@@ -138,7 +138,7 @@ def session_1(query):
         print(f"Executing S1 query: {query}")
         # cursor.execute('INSERT INTO `test_table` VALUES (5, "five");')
         cursor.execute(query)
-        time.sleep(10)  # Keep the transaction open for 20 seconds
+        time.sleep(12)  # Keep the transaction open for 20 seconds
         print("Rolling back S1...")
         cursor.execute("rollback;")
     finally:
@@ -147,23 +147,23 @@ def session_1(query):
         conn.close()
 
 
-def session_2(query):
+def ddl_session(query):
     time.sleep(2)  # Wait to make sure session 1 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
-        print(f"Executing S2 query: {query}")
+        print(f"Executing DDL query: {query}")
         cursor.execute(query)
         time.sleep(10)
     finally:
-        print("Closing S2")
+        print("Closing DDL session")
         cursor.close()
         conn.close()
 
 
 # Function to start another transaction in session 3
-def session_3(query):
-    time.sleep(3)  # Wait to make sure session 2 starts first
+def dml_session(query):
+    time.sleep(5)  # Wait to make sure session 2 starts first
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     try:
@@ -200,11 +200,12 @@ def cleanup_database():
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
     cursor.execute("DROP TABLE IF EXISTS `child`;")
+    cursor.execute("DROP TABLE IF EXISTS `child2`;")
     cursor.execute("DROP TABLE IF EXISTS `test_table`;")
     cursor.execute("DROP TABLE IF EXISTS `parent`;")
 
 
-def aggregate_locks(name, query_1, query_2, query_3, parent=False):
+def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=False, parent=False):
     print("----------------------------")
     print(f"Running the {name} scenario")
     print("----------------------------")
@@ -216,8 +217,11 @@ def aggregate_locks(name, query_1, query_2, query_3, parent=False):
 
     # Start the sessions in parallel using threads
     session1_thread = threading.Thread(target=session_1, args=(query_1,))
-    session2_thread = threading.Thread(target=session_2, args=(query_2,))
-    session3_thread = threading.Thread(target=session_3, args=(query_3,))
+    session2_thread = threading.Thread(target=ddl_session, args=(query_2,))
+    session3_thread = threading.Thread(target=dml_session, args=(query_3,))
+    if query_4:
+        session4_thread = threading.Thread(target=ddl_session, args=(query_4,))
+        
 
     # Start the lock collection in parallel
     duration = collection_duration
@@ -231,11 +235,17 @@ def aggregate_locks(name, query_1, query_2, query_3, parent=False):
     session1_thread.start()
     session2_thread.start()
     session3_thread.start()
+    if query_4:
+        time.sleep(5)
+        session4_thread.start()
+        
 
     # Wait for all threads to finish
     session1_thread.join()
     session2_thread.join()
     session3_thread.join()
+    if query_4:
+        session4_thread.join()
     lock_collection_thread.join()
 
     cleanup_database()
@@ -273,7 +283,3 @@ def aggregate_locks(name, query_1, query_2, query_3, parent=False):
 
     # Print the table
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
-
-
-# if __name__ == "__main__":
-#     main()
