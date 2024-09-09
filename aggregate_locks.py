@@ -26,7 +26,7 @@ collection_interval = 0.0001
 unique_locks = set()
 
 
-def setup_database(parent):
+def setup_database(parent=False):
     # Drop table if it exists, then create a new one
     conn = mysql.connector.connect(**table1_db_config)
     cursor = conn.cursor()
@@ -79,12 +79,6 @@ def setup_database(parent):
         (1, "one"), (2, "two"), (3, "three"), (4,"four");"""
     )
     print("Tables ready")
-
-
-def check_metadata_locks_reset():
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    query_metadata_locks(cursor)
 
 
 # Function to run the query and collect unique lock data
@@ -147,9 +141,9 @@ def session_1(query):
         conn.close()
 
 
-def ddl_session(query):
+def ddl_session(query,table_config):
     time.sleep(2)  # Wait to make sure session 1 starts first
-    conn = mysql.connector.connect(**table1_db_config)
+    conn = mysql.connector.connect(**table_config)
     cursor = conn.cursor()
     try:
         print(f"Executing DDL query: {query}")
@@ -217,10 +211,10 @@ def aggregate_locks(name, query_1, query_2, query_3, query_4=False, query_5=Fals
 
     # Start the sessions in parallel using threads
     session1_thread = threading.Thread(target=session_1, args=(query_1,))
-    session2_thread = threading.Thread(target=ddl_session, args=(query_2,))
+    session2_thread = threading.Thread(target=ddl_session, args=(query_2,table1_db_config))
     session3_thread = threading.Thread(target=dml_session, args=(query_3,))
     if query_4:
-        session4_thread = threading.Thread(target=ddl_session, args=(query_4,))
+        session4_thread = threading.Thread(target=ddl_session, args=(query_4,table1_db_config))
         
 
     # Start the lock collection in parallel
