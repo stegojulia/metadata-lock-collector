@@ -124,6 +124,8 @@ def query_metadata_locks(cursor):
             owner_event_id,
             owner_thread_id,
         )
+        if lock_key not in unique_locks:
+            print(lock_key)
         unique_locks.add(lock_key)
 
 
@@ -152,7 +154,7 @@ def session_2(query):
     try:
         print(f"Executing S2 query: {query}")
         cursor.execute(query)
-        time.sleep(8)
+        time.sleep(10)
     finally:
         print("Closing S2")
         cursor.close()
@@ -168,7 +170,7 @@ def session_3(query):
         cursor.execute("START TRANSACTION;")
         print(f"Executing S3 query: {query}")
         cursor.execute(query)
-        time.sleep(10)  # Keep the transaction open for 5 seconds
+        time.sleep(3)  # Keep the transaction open for 5 seconds
     finally:
         print("Rolling back S3")
         cursor.execute("rollback;")
