@@ -140,6 +140,7 @@ def query_processlist(cursor):
             host,
             db,
             command,
+            time,
             state,
             info,
         )
