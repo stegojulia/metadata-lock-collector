@@ -140,10 +140,10 @@ def query_processlist(cursor):
             host,
             db,
             command,
-            time,
             state,
             info,
         )
+            print(f"Threads running: {cursor.execute("SHOW STATUS LIKE 'Threads_running';")}")
             if (process) not in processlist_data:
                 print(process)
                 processlist_data.add(process)
