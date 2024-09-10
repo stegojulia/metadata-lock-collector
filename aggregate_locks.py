@@ -103,7 +103,7 @@ def query_metadata_locks(cursor):
             owner_thread_id,
         )
         if lock_key not in unique_locks:
-            print(lock_key)
+            print(time.time(), lock_key)
         unique_locks.add(lock_key)
 
 
@@ -130,7 +130,7 @@ def ddl_session(query, db_config):
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     try:
-        print(f"Executing DDL query: {query}")
+        print(f"{time.time()} Executing DDL query: {query}")
         cursor.execute(query)
         time.sleep(10)
     finally:
@@ -243,7 +243,7 @@ def aggregate_locks(
     lock_collection_thread = threading.Thread(
         target=collect_locks, args=(duration, interval, tb_config)
     )
-
+ 
     lock_collection_thread.start()
     # Start all threads
     session1_thread.start()
