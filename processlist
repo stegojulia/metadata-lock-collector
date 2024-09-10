@@ -6,61 +6,8 @@ Setting up test tables...
 Adding example records...
 Tables ready
 Executing S1 query: INSERT INTO `test_table` (id,val) VALUES (5, 'anteater');
-1725974524.293175 ('TABLE', 'lock_test', 'test_table', 'SHARED_WRITE', 'GRANTED', 7, 1504)
-(1346, 'root', '192.168.65.1:60538', 'performance_schema', 'Query', 'executing', 'SELECT \n            ID, \n            USER, \n            HOST, \n            DB, \n            COMMAND, \n            TIME, \n            STATE, \n            INFO \n        FROM INFORMATION_SCHEMA.PROCESSLIST')
-(1347, 'root', '192.168.65.1:59068', 'lock_test', 'Sleep', '', None)
-(5, 'event_scheduler', 'localhost', None, 'Daemon', 'Waiting on empty queue', None)
-(1348, 'unauthenticated user', '192.168.65.1:36607', None, 'Connect', 'login', None)
-1725974526.29136 Executing DDL query: ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;
-(1348, 'root', '192.168.65.1:36607', 'lock_test', 'Sleep', '', None)
-1725974526.2917492 ('SCHEMA', 'lock_test', None, 'INTENTION_EXCLUSIVE', 'GRANTED', 5, 1505)
-1725974526.2917628 ('TABLE', 'lock_test', 'test_table', 'SHARED_UPGRADABLE', 'GRANTED', 5, 1505)
-(1348, 'root', '192.168.65.1:36607', 'lock_test', 'Query', 'setup', 'ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL')
-1725974526.292348 ('TABLE', 'lock_test', '#sql-1_544', 'EXCLUSIVE', 'GRANTED', 5, 1505)
-1725974526.2923598 ('TABLE', 'lock_test', 'test_table', 'EXCLUSIVE', 'PENDING', 6, 1505)
-(1348, 'root', '192.168.65.1:36607', 'lock_test', 'Query', 'Waiting for table metadata lock', 'ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL')
-(1349, 'unauthenticated user', '192.168.65.1:31885', None, 'Connect', 'Receiving from client', None)
-(1349, 'unauthenticated user', '192.168.65.1:31885', None, 'Connect', 'login', None)
-(1349, 'root', '192.168.65.1:31885', 'lock_test', 'Sleep', '', None)
+1725984182.5181708 ('TABLE', 'lock_test', 'test_table', 'SHARED_WRITE', 'GRANTED', 7, 1511)
+1725984184.532366 Executing DDL query: ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;
 Executing S3 query: INSERT INTO `test_table` (id,val) VALUES (6, 'armadillo');
-1725974529.29301 ('TABLE', 'lock_test', 'test_table', 'SHARED_WRITE', 'PENDING', 7, 1506)
-(1349, 'root', '192.168.65.1:31885', 'lock_test', 'Query', 'Waiting for table metadata lock', "INSERT INTO `test_table` (id,val) VALUES (6, 'armadillo')")
-1725974534.288105 ('TABLE', 'lock_test', 'test_table', 'SHARED', 'PENDING', 1, 28)
 Rolling back S1...
-(1347, 'root', '192.168.65.1:59068', 'lock_test', 'Query', 'starting', 'rollback')
 Closing S1
-(1347, 'root', '192.168.65.1:59068', 'lock_test', 'Killed', None, None)
-(1348, 'root', '192.168.65.1:36607', 'lock_test', 'Query', 'committing alter table to storage engine', 'ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL')
-(1348, 'root', '192.168.65.1:36607', 'lock_test', 'Query', 'waiting for handler commit', 'ALTER TABLE `test_table` ADD COLUMN val2 VARCHAR(255) DEFAULT NULL')
-1725974536.300917 ('COLUMN STATISTICS', 'lock_test', 'test_table', 'SHARED_READ', 'GRANTED', 6, 1505)
-(1349, 'root', '192.168.65.1:31885', 'lock_test', 'Query', 'update', "INSERT INTO `test_table` (id,val) VALUES (6, 'armadillo')")
-1725974536.302699 ('TABLE', 'lock_test', 'test_table', 'SHARED_WRITE', 'GRANTED', 7, 1506)
-Rolling back S3
-(1349, 'root', '192.168.65.1:31885', 'lock_test', 'Query', 'starting', 'rollback')
-Closing S3
-1725974546.303234 ('TABLE', 'lock_test', 'test_table', 'SHARED', 'GRANTED', 1, 28)
-Closing DDL session
-Ensuring the database is clean and ready...
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| Object Type       | Object Schema   | Object Name   | Lock Type           | Lock Status   |   Owner Event ID |   Owner Thread ID |
-+===================+=================+===============+=====================+===============+==================+===================+
-| TABLE             | lock_test       | test_table    | SHARED              | PENDING       |                1 |                28 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | SHARED              | GRANTED       |                1 |                28 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | SHARED_WRITE        | GRANTED       |                7 |              1504 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| SCHEMA            | lock_test       |               | INTENTION_EXCLUSIVE | GRANTED       |                5 |              1505 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | #sql-1_544    | EXCLUSIVE           | GRANTED       |                5 |              1505 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | SHARED_UPGRADABLE   | GRANTED       |                5 |              1505 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| COLUMN STATISTICS | lock_test       | test_table    | SHARED_READ         | GRANTED       |                6 |              1505 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | EXCLUSIVE           | PENDING       |                6 |              1505 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | SHARED_WRITE        | PENDING       |                7 |              1506 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+
-| TABLE             | lock_test       | test_table    | SHARED_WRITE        | GRANTED       |                7 |              1506 |
-+-------------------+-----------------+---------------+---------------------+---------------+------------------+-------------------+

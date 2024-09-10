@@ -143,7 +143,7 @@ def query_processlist(cursor):
             state,
             info,
         )
-            print(f"Threads running: {cursor.execute("SHOW STATUS LIKE 'Threads_running';")}")
+
             if (process) not in processlist_data:
                 print(process)
                 processlist_data.add(process)
@@ -203,12 +203,20 @@ def collect_locks(duration, interval, db_config):
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
+    threads_running = 0
+
     try:
         start_time = time.time()
         while time.time() - start_time < duration:
             # Query the metadata locks and collect unique data
             query_metadata_locks(cursor)
             query_processlist(cursor)
+            cursor.execute("SHOW STATUS LIKE 'Threads_running';")
+            result = cursor.fetchone()
+            if threads_running != int(result[1]):
+                print(f"Current Threads_running: {threads_running}")
+                threads_running = int(result[1])
+
             time.sleep(interval)
     finally:
         cursor.close()
