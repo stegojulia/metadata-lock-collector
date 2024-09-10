@@ -116,7 +116,6 @@ def query_processlist(cursor):
             HOST, 
             DB, 
             COMMAND, 
-            TIME, 
             STATE, 
             INFO 
         FROM INFORMATION_SCHEMA.PROCESSLIST;
@@ -130,7 +129,6 @@ def query_processlist(cursor):
         host,
         db,
         command,
-        time,
         state,
         info,
     ) in cursor:
@@ -210,7 +208,7 @@ def collect_locks(duration, interval, db_config):
         while time.time() - start_time < duration:
             # Query the metadata locks and collect unique data
             query_metadata_locks(cursor)
-            query_processlist(cursor)
+            # query_processlist(cursor)
             cursor.execute("SHOW STATUS LIKE 'Threads_running';")
             result = cursor.fetchone()
             if threads_running != int(result[1]):
