@@ -8,6 +8,7 @@ collection_duration = 30
 collection_interval = 0.0001
 # Use a set to store unique locks based on the combination of key fields
 unique_locks = set()
+processlist_data = set()
 
 
 def setup_database(db_config, parent=False):
@@ -106,6 +107,46 @@ def query_metadata_locks(cursor):
             print(time.time(), lock_key)
         unique_locks.add(lock_key)
 
+def query_processlist(cursor):
+    cursor.execute(
+        """
+        SELECT 
+            ID, 
+            USER, 
+            HOST, 
+            DB, 
+            COMMAND, 
+            TIME, 
+            STATE, 
+            INFO 
+        FROM INFORMATION_SCHEMA.PROCESSLIST;
+        """
+    )
+    
+    # Fetch and process each row in the result
+    for (
+        id,
+        user,
+        host,
+        db,
+        command,
+        time,
+        state,
+        info,
+    ) in cursor:
+            process = (
+            id,
+            user,
+            host,
+            db,
+            command,
+            state,
+            info,
+        )
+            if (process) not in processlist_data:
+                print(process)
+                processlist_data.add(process)
+
 
 # Function to start a transaction in session 1
 def session_1(query, db_config):
@@ -166,6 +207,7 @@ def collect_locks(duration, interval, db_config):
         while time.time() - start_time < duration:
             # Query the metadata locks and collect unique data
             query_metadata_locks(cursor)
+            query_processlist(cursor)
             time.sleep(interval)
     finally:
         cursor.close()
@@ -191,7 +233,7 @@ def aggregate_locks(
     user="root",
     password="strong_password",
     host="127.0.0.1",
-    port=3306,
+    port=3307,
     database="lock_test",
     query_4=False,
     query_5=False,
@@ -219,8 +261,9 @@ def aggregate_locks(
 
     global unique_locks
     unique_locks.clear()
+    processlist_data.clear()
 
-    setup_database(ps_config, parent)
+    setup_database(tb_config, parent)
 
     # Start the sessions in parallel using threads
     session1_thread = threading.Thread(
@@ -241,7 +284,7 @@ def aggregate_locks(
     duration = collection_duration
     interval = collection_interval
     lock_collection_thread = threading.Thread(
-        target=collect_locks, args=(duration, interval, tb_config)
+        target=collect_locks, args=(duration, interval, ps_config)
     )
  
     lock_collection_thread.start()
@@ -296,3 +339,5 @@ def aggregate_locks(
 
     # Print the table
     print(tabulate(table_data, headers=headers, tablefmt="grid"))
+    for process in processlist_data:
+        print(process)
