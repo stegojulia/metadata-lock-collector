@@ -15,7 +15,7 @@ A tool for analyzing metadata locks in MySQL databases.
 Run a predefined scenario with multiple queries:
 
 ```bash
-python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUES (1, 'test')" "ALTER TABLE test_table ADD COLUMN new_col INT" "UPDATE test_table SET new_col = 1 WHERE id = 1"
+poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUES (1, 'test')" "ALTER TABLE test_table ADD COLUMN new_col INT" "UPDATE test_table SET new_col = 1 WHERE id = 1"
 ```
 
 
@@ -24,13 +24,13 @@ python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUE
 Collect metadata locks, optionally running a DDL query:
 
 ```bash
-python main.py --mode collect --ddl "ALTER TABLE test_table ADD COLUMN new_col INT"
+poetry runpython main.py --mode collect --ddl "ALTER TABLE test_table ADD COLUMN new_col INT"
 ```
 
 To collect locks without running any queries, omit the `--ddl` argument:
 
 ```bash
-python main.py --mode collect
+poetry runpython main.py --mode collect
 ```
 
 #### Arguments for Scenario Mode:
