@@ -10,15 +10,6 @@ A tool for analyzing metadata locks in MySQL databases.
 
 ## Usage
 
-### Scenario Mode
-
-Run a predefined scenario with multiple queries:
-
-```bash
-poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUES (1, 'test')" "ALTER TABLE test_table ADD COLUMN new_col INT" "UPDATE test_table SET new_col = 1 WHERE id = 1"
-```
-
-
 ### Collect Mode
 
 Collect metadata locks, optionally running a DDL query:
@@ -31,6 +22,14 @@ To collect locks without running any queries, omit the `--ddl` argument:
 
 ```
 poetry run python main.py --mode collect
+```
+
+### Scenario Mode
+
+Run a predefined scenario with multiple queries:
+
+```bash
+poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUES (1, 'test')" "ALTER TABLE test_table ADD COLUMN new_col INT" "UPDATE test_table SET new_col = 1 WHERE id = 1"
 ```
 
 #### Arguments for Scenario Mode:
