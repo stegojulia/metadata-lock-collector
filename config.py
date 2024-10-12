@@ -1,13 +1,20 @@
 import os
+import getpass
 from dotenv import load_dotenv
 
 print("Loading config.py")
 
 load_dotenv()
 
+def get_db_password():
+    password = os.getenv("DB_PASSWORD")
+    if not password:
+        password = getpass.getpass("Enter database password: ")
+    return password
+
 DB_CONFIG = {
     "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
+    "password": get_db_password(),
     "host": os.getenv("DB_HOST"),
     "port": int(os.getenv("DB_PORT", 3306)),
     "database": os.getenv("DB_NAME"),
