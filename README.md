@@ -24,13 +24,13 @@ poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,
 Collect metadata locks, optionally running a DDL query:
 
 ```bash
-poetry runpython main.py --mode collect --ddl "ALTER TABLE test_table ADD COLUMN new_col INT"
+poetry run python main.py --mode collect --ddl "ALTER TABLE test_table ADD COLUMN new_col INT"
 ```
 
 To collect locks without running any queries, omit the `--ddl` argument:
 
-```bash
-poetry runpython main.py --mode collect
+```
+poetry run python main.py --mode collect
 ```
 
 #### Arguments for Scenario Mode:
@@ -44,4 +44,6 @@ poetry runpython main.py --mode collect
 
 #### Example for Scenario Mode:
 
-```poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,val) VALUES (5, 'anteater');" "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;" "INSERT INTO test_table (id,val) VALUES (6, 'armadillo');"```
+```
+poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,val) VALUES (5, 'anteater');" "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;" "INSERT INTO test_table (id,val) VALUES (6, 'armadillo');"
+```
