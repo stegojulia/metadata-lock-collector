@@ -2,6 +2,12 @@
 
 A tool for analyzing metadata locks in MySQL databases.
 
+## Requirements
+
+- Python 3.9+
+- Poetry
+- Running MySQL server
+
 ## Setup
 
 1. Clone the repository
