@@ -23,7 +23,7 @@ class LockCollector:
     def _collect_locks_continuously(self):
         while self.is_collecting:
             self._collect_locks_once()
-            time.sleep(0.1)  # Collect locks every 100ms
+            time.sleep(COLLECTION_INTERVAL)
 
     def _collect_locks_once(self):
         conn = get_connection(PERFORMANCE_SCHEMA_CONFIG)
