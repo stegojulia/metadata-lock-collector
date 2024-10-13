@@ -1,5 +1,4 @@
 import argparse
-import re
 from database import setup_database, cleanup_database
 from query_runner import run_queries_with_locks
 from utils import format_locks
