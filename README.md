@@ -29,23 +29,41 @@ poetry run python main.py --mode collect
 Run a predefined scenario with multiple queries:
 
 ```bash
-poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id, val) VALUES (1, 'test')" "ALTER TABLE test_table ADD COLUMN new_col INT" "UPDATE test_table SET new_col = 1 WHERE id = 1"
+poetry run python main.py --mode scenario --query-types T1_insert T2_alter T3_insert --with-parent
 ```
 
 #### Arguments for Scenario Mode:
 
 - `--mode scenario`: Run in scenario mode.
-- `--queries`: Exactly three queries must be provided in the following order:
-  1. First query: DML (INSERT, UPDATE, or DELETE)
-  2. Second query: DDL (CREATE, ALTER, DROP, TRUNCATE, or RENAME)
-  3. Third query: DML (INSERT, UPDATE, or DELETE)
+- `--query-types`: Exactly three query types must be provided in the following order:
+  1. First query type: T1 (INSERT, UPDATE, or SELECT)
+  2. Second query type: T2 (CREATE or ALTER)
+  3. Third query type: T3 (INSERT, UPDATE, or SELECT)
 - `--with-parent`: Optional flag to set up the database with a parent table.
+
+#### Available Query Types:
+
+- T1_insert: Insert a record into test_table
+- T1_update: Update a record in test_table
+- T1_select: Select a record from test_table
+- T2_create: Create a child_table with a foreign key to test_table
+- T2_alter: Add a column to test_table
+- T3_insert: Insert another record into test_table
+- T3_update: Update another record in test_table
+- T3_select: Select another record from test_table
 
 #### Example for Scenario Mode:
 
 ```
-poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,val) VALUES (5, 'anteater');" "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;" "INSERT INTO test_table (id,val) VALUES (6, 'armadillo');"
+poetry run python main.py --mode scenario --query-types T1_insert T2_alter T3_insert --with-parent
 ```
+
+This command will:
+1. Insert a record into test_table
+2. Add a column to test_table
+3. Insert another record into test_table
+
+The `--with-parent` flag will set up the database with a parent table.
 
 ## Troubleshooting
 

@@ -5,30 +5,42 @@ from query_runner import run_queries_with_locks
 from utils import format_locks
 from lock_collector import collect_locks_continuously
 
-def is_dml_query(query):
-    return re.match(r'^\s*(INSERT|UPDATE|DELETE)', query.strip().upper()) is not None
 
-def is_ddl_query(query):
-    return re.match(r'^\s*(CREATE|ALTER|DROP|TRUNCATE|RENAME)', query.strip().upper()) is not None
+def get_predefined_queries(query_type):
+    queries = {
+        "T1_insert": "INSERT INTO test_table (id, val) VALUES (5, 'anteater')",
+        "T1_update": "UPDATE test_table SET val = 'updated_anteater' WHERE id = 5",
+        "T1_select": "SELECT * FROM test_table WHERE id = 5",
+        "T2_create": """CREATE TABLE child_table (
+    id INT PRIMARY KEY,
+    test_table_id INT,
+    val VARCHAR(255),
+    CONSTRAINT fk_test_table FOREIGN KEY (test_table_id) REFERENCES test_table (id)
+)""",
+        "T2_alter": "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL",
+        "T3_insert": "INSERT INTO test_table (id, val) VALUES (6, 'armadillo')",
+        "T3_update": "UPDATE test_table SET val = 'updated_armadillo' WHERE id = 6",
+        "T3_select": "SELECT * FROM test_table WHERE id = 6",
+    }
+    return queries.get(query_type, None)
 
-def validate_scenario_queries(queries):
-    if len(queries) != 3:
-        raise ValueError("Exactly three queries must be provided for scenario mode: DML, DDL, DML")
-    if not is_dml_query(queries[0]) or not is_ddl_query(queries[1]) or not is_dml_query(queries[2]):
-        raise ValueError("Queries for scenario mode must be in the order: DML, DDL, DML")
 
 def run_scenario(queries, with_parent=False):
-    validate_scenario_queries(queries)
     setup_database(with_parent)
-    
+
     print("Running queries...")
+    queries = [get_predefined_queries(qt) for qt in queries]
+    if None in queries:
+        raise ValueError("Invalid query type provided")
+
     locks = run_queries_with_locks(queries)
-    
+
     print("\nMetadata locks collected (in order):")
     print(format_locks(locks))
-    
+
     print("Cleaning up...")
     cleanup_database()
+
 
 def run_continuous():
     print("Starting continuous lock collection...")
@@ -36,18 +48,32 @@ def run_continuous():
     print("\nLocks collected:")
     print(format_locks(locks))
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run queries and collect metadata locks.")
-    parser.add_argument("--mode", choices=["scenario", "continuous"], required=True, help="Run mode")
-    parser.add_argument("--queries", nargs="*", help="Queries to execute in scenario mode (3 required: DML, DDL, DML)")
-    parser.add_argument("--with-parent", action="store_true", help="Set up database with parent table (scenario mode only)")
+    parser = argparse.ArgumentParser(
+        description="Run queries and collect metadata locks."
+    )
+    parser.add_argument(
+        "--mode", choices=["scenario", "continuous"], required=True, help="Run mode"
+    )
+    parser.add_argument(
+        "--query-types", nargs=3, required=True, help="Three query types to run"
+    )
+
+    parser.add_argument(
+        "--with-parent",
+        action="store_true",
+        help="Set up database with parent table (scenario mode only)",
+    )
     args = parser.parse_args()
 
     if args.mode == "scenario":
-        if not args.queries:
-            parser.error("--queries is required when mode is 'scenario'")
-        run_scenario(args.queries, args.with_parent)
+        if not args.query_types:
+            parser.error("--query-types is required when mode is 'scenario'")
+        run_scenario(args.query_types, args.with_parent)
     elif args.mode == "continuous":
-        if args.queries or args.with_parent:
-            parser.error("--queries and --with-parent are not applicable in continuous mode")
+        if args.query_types or args.with_parent:
+            parser.error(
+                "--queries and --with-parent are not applicable in continuous mode"
+            )
         run_continuous()
