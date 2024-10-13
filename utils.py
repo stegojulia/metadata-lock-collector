@@ -9,7 +9,9 @@ def format_locks(locks):
         "Object Schema",
         "Object Name",
         "Lock Type",
-        "Lock Status"
+        "Lock Status",
+        "Owner Event ID",
+        "Owner Thread ID"
     ]
 
     return tabulate(locks, headers=headers, tablefmt="grid")
