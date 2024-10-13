@@ -65,9 +65,10 @@ poetry run python main.py --mode scenario --query-types T1_insert T2_alter T3_in
 ```
 
 This command will:
-1. Insert a record into test_table
-2. Add a column to test_table
-3. Insert another record into test_table
+1. Start a transaction and insert a record into test_table (T1)
+2. Add a column to test_table (T2)
+3. Start a transaction and insert another record into test_table (T3)
+4. Roll back the transaction started in step 1
 
 The `--with-parent` flag will set up the database with a parent table.
 
