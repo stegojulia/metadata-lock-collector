@@ -46,3 +46,9 @@ poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,
 ```
 poetry run python main.py --mode scenario --queries "INSERT INTO test_table (id,val) VALUES (5, 'anteater');" "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL;" "INSERT INTO test_table (id,val) VALUES (6, 'armadillo');"
 ```
+
+## Troubleshooting
+
+### No locks are being collected.
+
+Ensure that performance_schema is enabled in your MySQL server. On some MySQL versions you may also need to enable metadata lock instrumentation. Check the MySQL documentation for your version for more information.
