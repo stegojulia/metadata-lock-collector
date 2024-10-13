@@ -21,7 +21,7 @@ A tool for analyzing metadata locks in MySQL databases.
 Collect metadata locks, optionally running a DDL query:
 
 ```bash
-poetry run python main.py --mode collect --ddl "ALTER TABLE test_table ADD COLUMN new_col INT"
+poetry run python main.py --mode collect --ddl "CREATE TABLE test_table (id INT PRIMARY KEY, val VARCHAR(255))"
 ```
 
 To collect locks without running any queries, omit the `--ddl` argument:

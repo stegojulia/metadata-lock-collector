@@ -3,6 +3,7 @@ from database import setup_database, cleanup_database
 from query_runner import run_queries_with_locks
 from utils import format_locks
 from lock_collector import collect_locks_continuously
+from config import COLLECTION_DURATION
 
 
 def get_predefined_queries(query_type):
@@ -41,9 +42,9 @@ def run_scenario(queries, with_parent=False):
     cleanup_database()
 
 
-def run_continuous():
+def run_continuous(ddl=None):
     print("Starting continuous lock collection...")
-    locks = collect_locks_continuously()
+    locks = collect_locks_continuously(duration=COLLECTION_DURATION,ddl=ddl)
     print("\nLocks collected:")
     print(format_locks(locks))
 
@@ -53,10 +54,10 @@ if __name__ == "__main__":
         description="Run queries and collect metadata locks."
     )
     parser.add_argument(
-        "--mode", choices=["scenario", "continuous"], required=True, help="Run mode"
+        "--mode", choices=["scenario", "collect"], required=True, help="Run mode"
     )
     parser.add_argument(
-        "--query-types", nargs=3, required=True, help="Three query types to run"
+        "--query-types", nargs=3, help="Three query types to run"
     )
 
     parser.add_argument(
@@ -64,15 +65,30 @@ if __name__ == "__main__":
         action="store_true",
         help="Set up database with parent table (scenario mode only)",
     )
+
+    parser.add_argument(
+        "--ddl",
+        type=str,
+        help="Run ddl query (collect mode only)",
+    )
+
+    parser.add_argument(
+        "--duration",
+        type=str,
+        help="Collection duration in seconds (collect mode only), defaults to 30 seconds",
+    )
+
     args = parser.parse_args()
 
     if args.mode == "scenario":
         if not args.query_types:
             parser.error("--query-types is required when mode is 'scenario'")
+        if args.ddl or args.duration:
+            parser.error("--ddl and --duration not applicable in scenario mode")
         run_scenario(args.query_types, args.with_parent)
-    elif args.mode == "continuous":
+    elif args.mode == "collect":
         if args.query_types or args.with_parent:
             parser.error(
-                "--queries and --with-parent are not applicable in continuous mode"
+                "--queries and --with-parent are not applicable in collect mode"
             )
-        run_continuous()
+        run_continuous(ddl=args.ddl)

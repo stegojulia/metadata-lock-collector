@@ -58,9 +58,17 @@ class LockCollector:
     def get_locks(self):
         return self.locks
 
-def collect_locks_continuously(duration=30):
+def collect_locks_continuously(duration=30,ddl=None):
     collector = LockCollector()
     collector.start_collecting()
+    if ddl:
+        conn = get_connection()
+        cursor = conn.cursor()
+        print(f"Running DDL: {ddl}")
+        cursor.execute(ddl)
     time.sleep(duration)
     collector.stop_collecting()
+    if ddl:
+        cursor.close()
+        conn.close()
     return collector.get_locks()
