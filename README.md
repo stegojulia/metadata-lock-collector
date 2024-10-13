@@ -12,13 +12,14 @@ A tool for analyzing metadata locks in MySQL databases.
 
 1. Clone the repository
 2. Install dependencies: `poetry install`
-3. Copy `.env.example` to `.env` and fill in your database credentials
+3. Copy `.env.example` to `.env` and fill in your database connection details. The script will prompt for the password if it is not available in the environment variables.
 
 ## Usage
 
 ### Collect Mode
+#### Use this mode to collect metadata locks from a running database.
 
-Collect metadata locks, optionally running a DDL query:
+Run DDL query during collection:
 
 ```bash
 poetry run python main.py --mode collect --ddl "CREATE TABLE test_table (id INT PRIMARY KEY, val VARCHAR(255))"

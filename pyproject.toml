@@ -3,12 +3,21 @@ name = "metadata-lock-counter"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9"
+python-dotenv = "*"
+tabulate = "^0.9.0"
+mysql-connector-python = "^9.0.0"
 
+pre-commit = "^4.0.1"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
+pre-commit = "*"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
