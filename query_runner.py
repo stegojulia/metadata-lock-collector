@@ -15,8 +15,7 @@ def run_query(query, delay,is_first_query=False):
             time.sleep(10)  # Hold the transaction open for 10 seconds
             print(f"Rolling back: {query}")
             conn.rollback()
-        else: 
-            time.sleep(2)
+        time.sleep(5)
     except Exception as e:
         print(f"Error executing query: {query}")
         print(f"Error message: {str(e)}")
