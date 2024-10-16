@@ -1,4 +1,4 @@
-# Metadata Lock Analyzer
+# Metadata Lock Collector
 
 A tool for analyzing metadata locks in MySQL databases.
 
