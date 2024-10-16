@@ -5,12 +5,11 @@ from utils import format_locks
 from lock_collector import collect_locks_continuously
 from config import COLLECTION_DURATION
 
-
 def get_predefined_queries(query_type):
     queries = {
         "T1_insert": "INSERT INTO test_table (id, val) VALUES (5, 'anteater')",
         "T1_update": "UPDATE test_table SET val = 'updated_anteater' WHERE id = 5",
-        "T1_select": "SELECT * FROM test_table WHERE id = 5",
+        "T1_select": "SELECT * FROM test_table WHERE id = 1",
         "T2_create": """CREATE TABLE child_table (
     id INT PRIMARY KEY,
     test_table_id INT,
@@ -20,7 +19,7 @@ def get_predefined_queries(query_type):
         "T2_alter": "ALTER TABLE test_table ADD COLUMN val2 VARCHAR(255) DEFAULT NULL",
         "T3_insert": "INSERT INTO test_table (id, val) VALUES (6, 'armadillo')",
         "T3_update": "UPDATE test_table SET val = 'updated_armadillo' WHERE id = 6",
-        "T3_select": "SELECT * FROM test_table WHERE id = 6",
+        "T3_select": "SELECT * FROM test_table WHERE id = 2",
     }
     return queries.get(query_type, None)
 
